@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Turnos Hospitalarios</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f6f8; }
+    h1, h2 { color: #333; }
+    form { background: #fff; padding: 15px; border-radius: 5px; max-width: 400px; margin-bottom: 20px; }
+    input, button { display: block; width: 100%; margin-bottom: 10px; padding: 8px; box-sizing: border-box; }
+    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    ul { list-style: none; padding: 0; }
+    li { background: #fff; padding: 10px; margin-bottom: 8px; border-radius: 4px; display: flex; justify-content: space-between; }
+    .btn-delete { background: #dc3545; width: auto; display: inline; padding: 4px 8px; margin: 0; }
+  </style>
+</head>
+<body>
+
+  <h1>Gestión de Turnos Hospitalarios</h1>
+
+  <h2>Nuevo Turno</h2>
+  <form id="turnoForm">
+    <input type="text" id="paciente" placeholder="Nombre del Paciente" required>
+    <input type="text" id="medico" placeholder="Médico / Especialidad" required>
+    <input type="date" id="fecha" required>
+    <input type="time" id="hora" required>
+    <button type="submit">Agendar Turno</button>
+  </form>
+
+  <h2>Lista de Turnos</h2>
+  <ul id="listaTurnos"></ul>
+
+  <script>
+    const API_URL = '/api/turnos';
+
+    // Función para obtener y mostrar turnos (GET)
+    async function cargarTurnos() {
+      const res = await fetch(API_URL);
+      const { data } = await res.json();
+      const lista = document.getElementById('listaTurnos');
+      lista.innerHTML = '';
+
+      data.forEach(t => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span><strong>${t.paciente}</strong> - ${t.medico} (${t.fecha} ${t.hora}) [${t.estado}]</span>
+          <button class="btn-delete" onclick="eliminarTurno(${t.id})">Cancelar</button>
+        `;
+        lista.appendChild(li);
+      });
+    }
+
+    // Función para crear turno (POST)
+    document.getElementById('turnoForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nuevoTurno = {
+        paciente: document.getElementById('paciente').value,
+        medico: document.getElementById('medico').value,
+        fecha: document.getElementById('fecha').value,
+        hora: document.getElementById('hora').value
+      };
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nuevoTurno)
+      });
+
+      e.target.reset();
+      cargarTurnos();
+    });
+
+    // Función para eliminar turno (DELETE)
+    async function eliminarTurno(id) {
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      cargarTurnos();
+    }
+
+    cargarTurnos();
+  </script>
+</body>
+</html>
