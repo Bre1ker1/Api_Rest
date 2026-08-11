@@ -9,12 +9,26 @@ const staffMedico = [
   { especialidad: "Oftalmología", medicos: ["Dra. Blanco", "Dr. Torres"] }
 ];
 
-// Bloquear fechas pasadas en el calendario HTML
-const hoy = new Date().toISOString().split('T')[0];
-document.getElementById('fecha').setAttribute('min', hoy);
+function generarHorariosCadaCincoMinutos() {
+  const horarios = [];
+  for (let h = 8; h < 18; h++) {
+    for (let m = 0; m < 60; m += 5) {
+      horarios.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    }
+  }
+  return horarios;
+}
 
-// Cargar select de médicos agrupados por especialidad
+const horariosDisponibles = generarHorariosCadaCincoMinutos();
+let turnosGuardados = [];
+
 const selectMedico = document.getElementById('medico');
+const inputFecha = document.getElementById('fecha');
+const selectHora = document.getElementById('hora');
+
+const hoy = new Date().toISOString().split('T')[0];
+inputFecha.setAttribute('min', hoy);
+
 staffMedico.forEach(grupo => {
   const optgroup = document.createElement('optgroup');
   optgroup.label = `🩺 ${grupo.especialidad}`;
@@ -27,50 +41,88 @@ staffMedico.forEach(grupo => {
   selectMedico.appendChild(optgroup);
 });
 
-// GET: Cargar turnos desde la API
+function actualizarHorariosDisponibles() {
+  const fechaSel = inputFecha.value;
+  const medicoSel = selectMedico.value;
+
+  selectHora.innerHTML = '';
+
+  if (!fechaSel || !medicoSel) {
+    selectHora.innerHTML = '<option value="">Seleccione fecha y médico primero</option>';
+    return;
+  }
+
+  const horasOcupadas = turnosGuardados
+    .filter(t => t.medico === medicoSel && t.fecha === fechaSel)
+    .map(t => t.hora);
+
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = '-- Seleccione una hora --';
+  selectHora.appendChild(defaultOption);
+
+  horariosDisponibles.forEach(hora => {
+    const option = document.createElement('option');
+    option.value = hora;
+    
+    if (horasOcupadas.includes(hora)) {
+      option.textContent = `${hora} hs - (Ocupado)`;
+      option.disabled = true;
+    } else {
+      option.textContent = `${hora} hs`;
+    }
+    selectHora.appendChild(option);
+  });
+}
+
+selectMedico.addEventListener('change', actualizarHorariosDisponibles);
+inputFecha.addEventListener('change', actualizarHorariosDisponibles);
+
 async function cargarTurnos() {
   try {
     const res = await fetch(API_URL);
     const { data } = await res.json();
+    turnosGuardados = data || [];
+
     const contenedor = document.getElementById('listaTurnos');
     contenedor.innerHTML = '';
 
-    if (!data || data.length === 0) {
+    if (turnosGuardados.length === 0) {
       contenedor.innerHTML = '<p style="text-align:center; color:#94a3b8;">No hay turnos agendados.</p>';
-      return;
+    } else {
+      turnosGuardados.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'turno-item';
+        item.innerHTML = `
+          <div class="turno-info">
+            <strong>${t.paciente}</strong>
+            <span>👨‍⚕️ ${t.medico}</span><br>
+            <span>📅 ${t.fecha} - ⏰ ${t.hora} hs</span><br>
+            <span class="badge ${t.estado}">${t.estado}</span>
+          </div>
+          <div class="actions">
+            ${t.estado === 'pendiente' ? `<button class="btn-action btn-confirm" onclick="confirmarTurno(${t.id})">Confirmar</button>` : ''}
+            <button class="btn-action btn-delete" onclick="eliminarTurno(${t.id})">Cancelar</button>
+          </div>
+        `;
+        contenedor.appendChild(item);
+      });
     }
 
-    data.forEach(t => {
-      const item = document.createElement('div');
-      item.className = 'turno-item';
-      item.innerHTML = `
-        <div class="turno-info">
-          <strong>${t.paciente}</strong>
-          <span>👨‍⚕️ ${t.medico}</span><br>
-          <span>📅 ${t.fecha} - ⏰ ${t.hora}</span><br>
-          <span class="badge ${t.estado}">${t.estado}</span>
-        </div>
-        <div class="actions">
-          ${t.estado === 'pendiente' ? `<button class="btn-action btn-confirm" onclick="confirmarTurno(${t.id})">Confirmar</button>` : ''}
-          <button class="btn-action btn-delete" onclick="eliminarTurno(${t.id})">Cancelar</button>
-        </div>
-      `;
-      contenedor.appendChild(item);
-    });
+    actualizarHorariosDisponibles();
   } catch (error) {
     console.error('Error al cargar turnos:', error);
   }
 }
 
-// POST: Registrar nuevo turno
 document.getElementById('turnoForm').addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const nuevoTurno = {
     paciente: document.getElementById('paciente').value,
     medico: selectMedico.value,
-    fecha: document.getElementById('fecha').value,
-    hora: document.getElementById('hora').value
+    fecha: inputFecha.value,
+    hora: selectHora.value
   };
 
   try {
@@ -84,7 +136,8 @@ document.getElementById('turnoForm').addEventListener('submit', async (e) => {
 
     if (res.ok) {
       e.target.reset();
-      document.getElementById('fecha').setAttribute('min', hoy);
+      inputFecha.setAttribute('min', hoy);
+      selectHora.innerHTML = '<option value="">Seleccione fecha y médico primero</option>';
       cargarTurnos();
     } else {
       alert(data.message || 'Error al agendar el turno');
@@ -95,7 +148,6 @@ document.getElementById('turnoForm').addEventListener('submit', async (e) => {
   }
 });
 
-// PUT: Confirmar turno
 async function confirmarTurno(id) {
   try {
     const res = await fetch(`${API_URL}/${id}`, {
@@ -103,24 +155,21 @@ async function confirmarTurno(id) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ estado: 'confirmado' })
     });
-
     if (res.ok) cargarTurnos();
   } catch (error) {
     console.error('Error al confirmar turno:', error);
   }
 }
 
-// DELETE: Cancelar turno
 async function eliminarTurno(id) {
   if (confirm('¿Estás seguro de cancelar este turno?')) {
     try {
       const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-      if (res.ok) cargarTurnos();
+      if (res.ok || res.status === 204) cargarTurnos();
     } catch (error) {
       console.error('Error al eliminar turno:', error);
     }
   }
 }
 
-// Inicializar la lista al abrir la página
 cargarTurnos();

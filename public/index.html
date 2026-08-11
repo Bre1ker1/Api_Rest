@@ -3,51 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestión de Turnos Hospitalarios</title>
+  <title>Gestión de Turnos Médicos</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
   <div class="container">
-    <header>
-      <h1>🏥 Centro Médico - Gestión de Turnos</h1>
-      <p>Panel de administración de citas para pacientes</p>
-    </header>
+    <!-- Formulario -->
+    <div class="card">
+      <h2>Agendar Nuevo Turno</h2>
+      <form id="turnoForm">
+        <div class="form-group">
+          <label for="paciente">Paciente</label>
+          <input type="text" id="paciente" placeholder="Nombre completo" required>
+        </div>
 
-    <div class="grid">
-      <div class="card">
-        <h2>Agendar Nuevo Turno</h2>
-        <form id="turnoForm">
-          <div class="form-group">
-            <label for="paciente">Paciente</label>
-            <input type="text" id="paciente" placeholder="Nombre completo" required>
-          </div>
+        <div class="form-group">
+          <label for="medico">Médico / Especialidad</label>
+          <select id="medico" required>
+            <option value="">Seleccione un médico</option>
+          </select>
+        </div>
 
-          <div class="form-group">
-            <label for="medico">Médico / Especialidad</label>
-            <select id="medico" required>
-              <option value="">-- Seleccione Médico --</option>
-            </select>
-          </div>
+        <div class="form-group">
+          <label for="fecha">Fecha</label>
+          <input type="date" id="fecha" required>
+        </div>
 
-          <div class="form-group">
-            <label for="fecha">Fecha</label>
-            <input type="date" id="fecha" required>
-          </div>
+        <div class="form-group">
+          <label for="hora">Hora Disponible</label>
+          <select id="hora" required>
+            <option value="">Seleccione fecha y médico primero</option>
+          </select>
+        </div>
 
-          <div class="form-group">
-            <label for="hora">Hora</label>
-            <input type="time" id="hora" required>
-          </div>
+        <button type="submit" class="btn-primary">Agendar Turno</button>
+      </form>
+    </div>
 
-          <button type="submit">Agendar Turno</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h2>Turnos Registrados</h2>
-        <div id="listaTurnos"></div>
-      </div>
+    <!-- Lista de Turnos -->
+    <div class="card">
+      <h2>Turnos Registrados</h2>
+      <div id="listaTurnos" class="turnos-container"></div>
     </div>
   </div>
 
