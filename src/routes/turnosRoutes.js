@@ -9,15 +9,21 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/turnos/:id - Obtener turno por ID
-router.get('/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  const turno = turnos.find(t => t.id === id);
+// GET /api/turnos - Obtener todos los turnos (con soporte para query params)
+router.get('/', (req, res) => {
+  const { medico, fecha } = req.query;
 
-  if (!turno) {
-    return res.status(404).json({ error: 'Turno no encontrado' });
+  let resultado = turnos;
+
+  if (medico) {
+    resultado = resultado.filter(t => t.medico.toLowerCase() === medico.toLowerCase());
   }
 
-  res.status(200).json(turno);
+  if (fecha) {
+    resultado = resultado.filter(t => t.fecha === fecha);
+  }
+
+  res.status(200).json(resultado);
 });
 
 // POST /api/turnos - Crear un nuevo turno

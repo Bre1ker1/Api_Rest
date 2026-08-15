@@ -12,7 +12,7 @@ const staffMedico = [
 function generarHorariosCadaCincoMinutos() {
   const horarios = [];
   for (let h = 8; h < 18; h++) {
-    for (let m = 0; m < 60; m += 5) {
+    for (let m = 0; m < 60; m += 30) { // Intervalos de 30 minutos
       horarios.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
     }
   }
@@ -81,8 +81,9 @@ inputFecha.addEventListener('change', actualizarHorariosDisponibles);
 async function cargarTurnos() {
   try {
     const res = await fetch(API_URL);
-    const { data } = await res.json();
-    turnosGuardados = data || [];
+    const data = await res.json();
+    // Tu backend devuelve un array directamente
+    turnosGuardados = Array.isArray(data) ? data : [];
 
     const contenedor = document.getElementById('listaTurnos');
     contenedor.innerHTML = '';
@@ -95,13 +96,11 @@ async function cargarTurnos() {
         item.className = 'turno-item';
         item.innerHTML = `
           <div class="turno-info">
-            <strong>${t.paciente}</strong>
+            <strong>${t.paciente}</strong><br>
             <span>👨‍⚕️ ${t.medico}</span><br>
-            <span>📅 ${t.fecha} - ⏰ ${t.hora} hs</span><br>
-            <span class="badge ${t.estado}">${t.estado}</span>
+            <span>📅 ${t.fecha} - ⏰ ${t.hora} hs</span>
           </div>
           <div class="actions">
-            ${t.estado === 'pendiente' ? `<button class="btn-action btn-confirm" onclick="confirmarTurno(${t.id})">Confirmar</button>` : ''}
             <button class="btn-action btn-delete" onclick="eliminarTurno(${t.id})">Cancelar</button>
           </div>
         `;
@@ -135,31 +134,19 @@ document.getElementById('turnoForm').addEventListener('submit', async (e) => {
     const data = await res.json();
 
     if (res.ok) {
-      e.target.reset();
-      inputFecha.setAttribute('min', hoy);
+      document.getElementById('paciente').value = '';
+      selectMedico.value = '';
+      inputFecha.value = '';
       selectHora.innerHTML = '<option value="">Seleccione fecha y médico primero</option>';
       cargarTurnos();
     } else {
-      alert(data.message || 'Error al agendar el turno');
+      alert(data.error || 'Error al agendar el turno');
     }
   } catch (error) {
     console.error('Error en la petición POST:', error);
     alert('No se pudo conectar con el servidor.');
   }
 });
-
-async function confirmarTurno(id) {
-  try {
-    const res = await fetch(`${API_URL}/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ estado: 'confirmado' })
-    });
-    if (res.ok) cargarTurnos();
-  } catch (error) {
-    console.error('Error al confirmar turno:', error);
-  }
-}
 
 async function eliminarTurno(id) {
   if (confirm('¿Estás seguro de cancelar este turno?')) {
