@@ -76,10 +76,34 @@ API_REST/
 ├── package.json
 └── README.md
 
-## Lógica CRUD y Endpoints REST:
+## 📡 Lógica CRUD y Endpoints REST
 
-Se implementaron las operaciones fundamentales utilizando express.Router() y respuestas en formato JSON:
-MétodoEndpointDescripciónCódigo HTTP ExitosoCódigo HTTP ErrorGET/api/turnosRetorna el listado completo de turnos (permite filtro por query params)200 OK500 Internal Server ErrorGET/api/turnos/:idBusca un turno específico por su ID200 OK404 Not FoundPOST/api/turnosAgenda un nuevo turno previa validación201 Created400 Bad RequestPUT/api/turnos/:idActualiza o confirma un turno existente200 OK400 Bad Request / 404 Not FoundDELETE/api/turnos/:idCancela/elimina un turno por su ID204 No Content404 Not Found
+Se implementaron las operaciones fundamentales utilizando `express.Router()` y respuestas en formato JSON:
+
+- **GET `/api/turnos`**
+  - **Descripción:** Retorna el listado completo de turnos (permite filtro por query params).
+  - **Respuesta exitosa:** `200 OK`
+  - **Respuesta error:** `500 Internal Server Error`
+
+- **GET `/api/turnos/:id`**
+  - **Descripción:** Busca un turno específico por su ID.
+  - **Respuesta exitosa:** `200 OK`
+  - **Respuesta error:** `404 Not Found`
+
+- **POST `/api/turnos`**
+  - **Descripción:** Agenda un nuevo turno previa validación.
+  - **Respuesta exitosa:** `201 Created`
+  - **Respuesta error:** `400 Bad Request`
+
+- **PUT `/api/turnos/:id`**
+  - **Descripción:** Actualiza o confirma un turno existente.
+  - **Respuesta exitosa:** `200 OK`
+  - **Respuesta error:** `400 Bad Request` / `404 Not Found`
+
+- **DELETE `/api/turnos/:id`**
+  - **Descripción:** Cancela/elimina un turno por su ID.
+  - **Respuesta exitosa:** `204 No Content`
+  - **Respuesta error:** `404 Not Found`
 
 ## Reglas de Validación Implementadas:
 
