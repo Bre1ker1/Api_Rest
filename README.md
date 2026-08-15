@@ -31,34 +31,39 @@ Asegúrate de tener instalados en tu equipo:
 
 ### 2. Pasos para Clonar y Ejecutar la Aplicación
 
-1. **Abrir la Terminal o Consola de Comandos:**
+1. **Abrir la Terminal o Consola de Comandos:**  
    Abre **CMD**, **PowerShell** o la terminal integrada de **Visual Studio Code**.
 
-2. **Clonar el Repositorio de GitHub:**
-   Ejecuta el siguiente comando para descargar el código en tu computadora:
+2. **Clonar el Repositorio de GitHub:**  
+    Ejecuta el siguiente comando para descargar el código en tu computadora:
    ```bash
    git clone [https://github.com/Bre1ker1/Api_Rest.git](https://github.com/Bre1ker1/Api_Rest.git)
+   Ingresar a la Carpeta del Proyecto:
    ```
 
-### 3. Ingresar a la Carpeta del Proyecto:
+Bash
 
-cd_Api_Rest
+cd Api_Rest
+Instalar Dependencias:
 
-### 4. Instalar Dependencias:
+Ejecuta el siguiente comando para descargar las librerías necesarias:
 
-Ejecuta el siguiente comando para descargar las librerias necesarias
+Bash
 
 npm install
+Iniciar el Servidor:
 
-### 5. Iniciar el Servidor:
+Bash
 
 npm start
+Acceder a la Aplicación:
 
-### 6. Acceder a la Aplicacion:
+Una vez que aparezca el mensaje Servidor escuchando en http://localhost:3000, abre tu navegador e ingresa a:
 
-Una vez que aparezca el mensaje: Servidor escuchando en http://localhost:3000, abre tu navegador e ingresa a : http://localhost:3000
+👉 http://localhost:3000
 
-## Estructura del Proyecto
+📂 Estructura del Proyecto
+Plaintext
 
 API_REST/
 ├── public/
@@ -75,38 +80,50 @@ API_REST/
 ├── package-lock.json
 ├── package.json
 └── README.md
+📡 Lógica CRUD y Endpoints REST
+Se implementaron las operaciones fundamentales utilizando express.Router() y respuestas en formato JSON:
 
-## 📡 Lógica CRUD y Endpoints REST
+GET /api/turnos
 
-Se implementaron las operaciones fundamentales utilizando `express.Router()` y respuestas en formato JSON:
+Descripción: Retorna el listado completo de turnos (permite filtro por query params).
 
-- **GET `/api/turnos`**
-  - **Descripción:** Retorna el listado completo de turnos (permite filtro por query params).
-  - **Respuesta exitosa:** `200 OK`
-  - **Respuesta error:** `500 Internal Server Error`
+Respuesta exitosa: 200 OK
 
-- **GET `/api/turnos/:id`**
-  - **Descripción:** Busca un turno específico por su ID.
-  - **Respuesta exitosa:** `200 OK`
-  - **Respuesta error:** `404 Not Found`
+Respuesta error: 500 Internal Server Error
 
-- **POST `/api/turnos`**
-  - **Descripción:** Agenda un nuevo turno previa validación.
-  - **Respuesta exitosa:** `201 Created`
-  - **Respuesta error:** `400 Bad Request`
+GET /api/turnos/:id
 
-- **PUT `/api/turnos/:id`**
-  - **Descripción:** Actualiza o confirma un turno existente.
-  - **Respuesta exitosa:** `200 OK`
-  - **Respuesta error:** `400 Bad Request` / `404 Not Found`
+Descripción: Busca un turno específico por su ID.
 
-- **DELETE `/api/turnos/:id`**
-  - **Descripción:** Cancela/elimina un turno por su ID.
-  - **Respuesta exitosa:** `204 No Content`
-  - **Respuesta error:** `404 Not Found`
+Respuesta exitosa: 200 OK
 
-## Reglas de Validación Implementadas:
+Respuesta error: 404 Not Found
 
+POST /api/turnos
+
+Descripción: Agenda un nuevo turno previa validación.
+
+Respuesta exitosa: 201 Created
+
+Respuesta error: 400 Bad Request
+
+PUT /api/turnos/:id
+
+Descripción: Actualiza o confirma un turno existente.
+
+Respuesta exitosa: 200 OK
+
+Respuesta error: 400 Bad Request / 404 Not Found
+
+DELETE /api/turnos/:id
+
+Descripción: Cancela/elimina un turno por su ID.
+
+Respuesta exitosa: 204 No Content
+
+Respuesta error: 404 Not Found
+
+⚙️ Reglas de Validación Implementadas
 Campos obligatorios: Valida que la solicitud incluya paciente, medico, fecha y hora.
 
 Incompatibilidad de horarios: Impide registrar dos turnos para el mismo médico en la misma fecha y hora.
@@ -115,12 +132,10 @@ Fechas pasadas: Bloquea la creación de citas en fechas anteriores al día actua
 
 Manejo de errores: Devuelve un código 404 Not Found si el ID consultado, modificado o eliminado no existe.
 
-## Concepto REST: Idempotencia
-
+🧠 Concepto REST: Idempotencia
 En la API desarrollada, los métodos GET, PUT y DELETE son idempotentes, ya que realizar la misma solicitud múltiples veces consecutivas produce el mismo efecto final en el estado del servidor. Por ejemplo, ejecutar DELETE /api/turnos/123 eliminará el turno la primera vez y las peticiones subsecuentes mantendrán el recurso como inexistente sin alterar otros registros. En cambio, el método POST no es idempotente, debido a que cada ejecución repetida genera un nuevo registro con un ID único en el arreglo en memoria.
 
-## Persistencia de Datos
-
+💾 Persistencia de Datos
 Los turnos se almacenan temporalmente en la memoria RAM a través de un arreglo JavaScript. Al ser memoria volátil, los datos modificados se restablecen a su estado inicial si el servidor de Node.js se detiene o reinicia.
 
 ### Pasos para subir la actualización a GitHub:
