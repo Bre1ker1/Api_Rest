@@ -1,120 +1,83 @@
+// src/routes/turnosRoutes.js
 const express = require('express');
 const router = express.Router();
+let turnos = require('../data/turnosMock');
 
-// Datos mockeados en memoria
-let turnos = [];
-
-// GET /api/turnos - Listar todos los registros (200 OK)
+// GET /api/turnos - Obtener todos los turnos
 router.get('/', (req, res) => {
-  res.status(200).json({ status: 'ok', data: turnos });
+  res.status(200).json(turnos);
 });
 
-// GET /api/turnos/:id - Consultar un registro individual (200 OK / 404 Not Found)
+// GET /api/turnos/:id - Obtener turno por ID
 router.get('/:id', (req, res) => {
-  const { id } = req.params;
-  const turno = turnos.find(t => t.id == id);
+  const id = parseInt(req.params.id);
+  const turno = turnos.find(t => t.id === id);
 
   if (!turno) {
-    return res.status(404).json({ 
-      status: 'error', 
-      message: 'El turno solicitado no existe.' 
-    });
+    return res.status(404).json({ error: 'Turno no encontrado' });
   }
 
-  res.status(200).json({ status: 'ok', data: turno });
+  res.status(200).json(turno);
 });
 
-// POST /api/turnos - Crear un nuevo registro (201 Created / 400 Bad Request)
+// POST /api/turnos - Crear un nuevo turno
 router.post('/', (req, res) => {
+  if (!req.body || Object.keys(req.body).length === 0) {
+    return res.status(400).json({ error: 'El cuerpo de la solicitud está vacío' });
+  }
+
   const { paciente, medico, fecha, hora } = req.body;
 
-  // Validaciones de campos obligatorios
   if (!paciente || !medico || !fecha || !hora) {
-    return res.status(400).json({ 
-      status: 'error', 
-      message: 'Todos los campos (paciente, medico, fecha, hora) son obligatorios.' 
-    });
+    return res.status(400).json({ error: 'Los campos paciente, medico, fecha y hora son obligatorios' });
   }
 
-  // Normalizar fecha
-  let fechaNormalizada = fecha;
-  if (fecha.includes('/')) {
-    const partes = fecha.split('/');
-    if (partes.length === 3) {
-      fechaNormalizada = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
-    }
+  // Validación de conflicto de horario
+  const existeConflicto = turnos.some(t => t.medico === medico && t.fecha === fecha && t.hora === hora);
+  if (existeConflicto) {
+    return res.status(400).json({ error: 'El médico ya tiene un turno reservado en esa fecha y hora' });
   }
 
-  // Validar que la fecha no sea pasada
-  const hoy = new Date().toISOString().split('T')[0];
-  if (fechaNormalizada < hoy) {
-    return res.status(400).json({ 
-      status: 'error', 
-      message: 'No se pueden agendar turnos en fechas pasadas.' 
-    });
-  }
-
-  // Validar turno duplicado para mismo médico, fecha y hora
-  const turnoExistente = turnos.find(
-    t => t.medico === medico && t.fecha === fechaNormalizada && t.hora === hora
-  );
-
-  if (turnoExistente) {
-    return res.status(400).json({
-      status: 'error',
-      message: `El ${medico} ya tiene un turno reservado el día ${fechaNormalizada} a las ${hora} hs.`
-    });
-  }
-
-  const nuevoTurno = {
-    id: Date.now(),
-    paciente,
-    medico,
-    fecha: fechaNormalizada,
-    hora,
-    estado: 'pendiente'
-  };
+  const nuevoId = turnos.length > 0 ? Math.max(...turnos.map(t => t.id)) + 1 : 1;
+  const nuevoTurno = { id: nuevoId, paciente, medico, fecha, hora };
 
   turnos.push(nuevoTurno);
-  res.status(201).json({ status: 'ok', data: nuevoTurno });
+  res.status(201).json(nuevoTurno);
 });
 
-// PUT /api/turnos/:id - Modificar un registro existente (200 OK / 400 Bad Request / 404 Not Found)
+// PUT /api/turnos/:id - Actualizar un turno existente
 router.put('/:id', (req, res) => {
-  const { id } = req.params;
-  const { estado, paciente, medico, fecha, hora } = req.body;
-
-  const turno = turnos.find(t => t.id == id);
-  if (!turno) {
-    return res.status(404).json({ 
-      status: 'error', 
-      message: 'Turno no encontrado.' 
-    });
-  }
-
-  if (estado) turno.estado = estado;
-  if (paciente) turno.paciente = paciente;
-  if (medico) turno.medico = medico;
-  if (fecha) turno.fecha = fecha;
-  if (hora) turno.hora = hora;
-
-  res.status(200).json({ status: 'ok', data: turno });
-});
-
-// DELETE /api/turnos/:id - Eliminar un registro (204 No Content / 404 Not Found)
-router.delete('/:id', (req, res) => {
-  const { id } = req.params;
-  const index = turnos.findIndex(t => t.id == id);
+  const id = parseInt(req.params.id);
+  const index = turnos.findIndex(t => t.id === id);
 
   if (index === -1) {
-    return res.status(404).json({ 
-      status: 'error', 
-      message: 'El turno a eliminar no existe.' 
-    });
+    return res.status(404).json({ error: 'Turno no encontrado' });
+  }
+
+  if (!req.body || Object.keys(req.body).length === 0) {
+    return res.status(400).json({ error: 'El cuerpo de la solicitud está vacío' });
+  }
+
+  const { paciente, medico, fecha, hora } = req.body;
+
+  if (!paciente || !medico || !fecha || !hora) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+  }
+
+  turnos[index] = { id, paciente, medico, fecha, hora };
+  res.status(200).json(turnos[index]);
+});
+
+// DELETE /api/turnos/:id - Eliminar un turno
+router.delete('/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const index = turnos.findIndex(t => t.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ error: 'Turno no encontrado' });
   }
 
   turnos.splice(index, 1);
-  // 204 No Content (operación correcta sin cuerpo de respuesta)
   res.status(204).send();
 });
 
