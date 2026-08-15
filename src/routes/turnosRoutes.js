@@ -32,12 +32,6 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: 'Los campos paciente, medico, fecha y hora son obligatorios' });
   }
 
-  // Validación de conflicto de horario
-  const existeConflicto = turnos.some(t => t.medico === medico && t.fecha === fecha && t.hora === hora);
-  if (existeConflicto) {
-    return res.status(400).json({ error: 'El médico ya tiene un turno reservado en esa fecha y hora' });
-  }
-
   const nuevoId = turnos.length > 0 ? Math.max(...turnos.map(t => t.id)) + 1 : 1;
   const nuevoTurno = { id: nuevoId, paciente, medico, fecha, hora };
 
