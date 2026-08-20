@@ -56,6 +56,10 @@ function actualizarHorariosDisponibles() {
     .filter(t => t.medico === medicoSel && t.fecha === fechaSel)
     .map(t => t.hora);
 
+  // Obtener hora actual para validar el día de hoy
+  const ahora = new Date();
+  const horaActualStr = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+
   const defaultOption = document.createElement('option');
   defaultOption.value = '';
   defaultOption.textContent = '-- Seleccione una hora --';
@@ -64,13 +68,20 @@ function actualizarHorariosDisponibles() {
   horariosDisponibles.forEach(hora => {
     const option = document.createElement('option');
     option.value = hora;
-    
-    if (horasOcupadas.includes(hora)) {
+
+    const estaOcupada = horasOcupadas.includes(hora);
+    const esHoraPasada = (fechaSel === hoy) && (hora <= horaActualStr);
+
+    if (estaOcupada) {
       option.textContent = `${hora} hs - (Ocupado)`;
+      option.disabled = true;
+    } else if (esHoraPasada) {
+      option.textContent = `${hora} hs - (Pasado)`;
       option.disabled = true;
     } else {
       option.textContent = `${hora} hs`;
     }
+    
     selectHora.appendChild(option);
   });
 }
