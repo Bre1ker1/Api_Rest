@@ -1,22 +1,32 @@
-// src/app.js
 const express = require('express');
-const app = express();
-const PORT = 3000;
+const http = require('http');
+const https = require('https');
+const fs = require('fs');
+require('dotenv').config();
 
-// Requerimos el archivo con las rutas de los turnos
+const app = express();
 const turnosRoutes = require('./routes/turnosRoutes');
 
 // Middlewares obligatorios
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Servir la carpeta estática para el frontend
 app.use(express.static('public'));
 
 // Rutas de la API
 app.use('/api/turnos', turnosRoutes);
 
-// Iniciamos el servidor
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en http://localhost:${PORT}`);
+// Cargar Certificados SSL
+const httpsOptions = {
+  key: fs.readFileSync(process.env.SSL_KEY_PATH),
+  cert: fs.readFileSync(process.env.SSL_CERT_PATH)
+};
+
+// Servidor HTTP
+http.createServer(app).listen(process.env.PORT, () => {
+  console.log(`Servidor HTTP en http://localhost:${process.env.PORT}`);
+});
+
+// Servidor HTTPS
+https.createServer(httpsOptions, app).listen(process.env.HTTPS_PORT, () => {
+  console.log(`Servidor HTTPS seguro en https://localhost:${process.env.HTTPS_PORT}`);
 });

@@ -2,17 +2,11 @@
 const express = require('express');
 const router = express.Router();
 let turnos = require('../data/turnosMock');
+const { adquirirLock, liberarLock } = require('../utils/lock');
 
-// GET /api/turnos - Obtener todos los turnos
-router.get('/', (req, res) => {
-  res.status(200).json(turnos);
-});
-
-// GET /api/turnos/:id - Obtener turno por ID
-// GET /api/turnos - Obtener todos los turnos (con soporte para query params)
+// GET /api/turnos - Obtener todos los turnos (con o sin filtros)
 router.get('/', (req, res) => {
   const { medico, fecha } = req.query;
-
   let resultado = turnos;
 
   if (medico) {
@@ -24,6 +18,18 @@ router.get('/', (req, res) => {
   }
 
   res.status(200).json(resultado);
+});
+
+// GET /api/turnos/:id - Obtener turno por ID
+router.get('/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const turno = turnos.find(t => t.id === id);
+
+  if (!turno) {
+    return res.status(404).json({ error: 'Turno no encontrado' });
+  }
+
+  res.status(200).json(turno);
 });
 
 // POST /api/turnos - Crear un nuevo turno
@@ -45,8 +51,8 @@ router.post('/', (req, res) => {
   res.status(201).json(nuevoTurno);
 });
 
-// PUT /api/turnos/:id - Actualizar un turno existente
-router.put('/:id', (req, res) => {
+// PUT /api/turnos/:id - Actualizar un turno existente con Lock Concurrente
+router.put('/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   const index = turnos.findIndex(t => t.id === id);
 
@@ -64,12 +70,30 @@ router.put('/:id', (req, res) => {
     return res.status(400).json({ error: 'Todos los campos son obligatorios' });
   }
 
-  turnos[index] = { id, paciente, medico, fecha, hora };
-  res.status(200).json(turnos[index]);
+  // --- LÓGICA DE DISTRIBUTED LOCK ---
+  const tokenPropietario = `token_${Date.now()}_${Math.random()}`;
+  const lockAdquirido = await adquirirLock(id, tokenPropietario, 5);
+
+  if (!lockAdquirido) {
+    return res.status(409).json({
+      error: 'Recurso bloqueado',
+      mensaje: 'Otro usuario está modificando este turno. Intenta nuevamente en unos segundos.'
+    });
+  }
+
+  try {
+    // Simulación de delay de procesamiento (3 segundos)
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    turnos[index] = { id, paciente, medico, fecha, hora };
+    res.status(200).json(turnos[index]);
+  } finally {
+    await liberarLock(id, tokenPropietario);
+  }
 });
 
-// DELETE /api/turnos/:id - Eliminar un turno
-router.delete('/:id', (req, res) => {
+// DELETE /api/turnos/:id - Eliminar un turno con Lock Concurrente
+router.delete('/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   const index = turnos.findIndex(t => t.id === id);
 
@@ -77,8 +101,23 @@ router.delete('/:id', (req, res) => {
     return res.status(404).json({ error: 'Turno no encontrado' });
   }
 
-  turnos.splice(index, 1);
-  res.status(204).send();
+  // --- LÓGICA DE DISTRIBUTED LOCK ---
+  const tokenPropietario = `token_${Date.now()}_${Math.random()}`;
+  const lockAdquirido = await adquirirLock(id, tokenPropietario, 5);
+
+  if (!lockAdquirido) {
+    return res.status(409).json({
+      error: 'Recurso bloqueado',
+      mensaje: 'Otro usuario está procesando este turno. Intenta nuevamente.'
+    });
+  }
+
+  try {
+    turnos.splice(index, 1);
+    res.status(204).send();
+  } finally {
+    await liberarLock(id, tokenPropietario);
+  }
 });
 
 module.exports = router;
