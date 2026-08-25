@@ -3,7 +3,7 @@
 **Universidad UCH Champagnat**  
 **Carrera:** Licenciatura en Sistemas de Información  
 **Materia:** Programación Distribuida  
-**Trabajo Práctico N° 1:** API REST con Node.js y Express  
+**Trabajo Práctico N° 2:** API REST, Seguridad (HTTPS), Configuración y Concurrencia (Redis)  
 **Estudiante:** Brian Villalba  
 **DNI:** 46868103  
 **Recurso Modelado:** Turnos Médicos (`turnos`)
@@ -12,121 +12,113 @@
 
 ## 📋 Descripción
 
-Proyecto de API RESTful desarrollada con **Node.js** y **Express** para la gestión de turnos médicos trabajando con datos en memoria, complementada con una interfaz web en el Frontend y validaciones CRUD completas.
+Proyecto de API RESTful desarrollado con **Node.js**, **Express** y **Redis**. Evolución del TP N° 1 que incorpora:
+
+1. **Seguridad SSL/TLS (HTTPS)** mediante certificados digitales autofirmados de 2048 bits.
+2. **Variables de Entorno (`.env`)** para proteger configuraciones sensibles.
+3. **Control de Concurrencia (Distributed Lock)** con Redis para evitar que dos usuarios modifiquen o cancelen el mismo turno al mismo tiempo.
+
+---
+
+## 🧠 Explicación Sencilla de las Nuevas Funcionalidades
+
+Si no tienes experiencia previa en sistemas, aquí te explicamos qué hacen los nuevos componentes:
+
+- **¿Qué es `.env` (Variables de Entorno)?**
+  Es como una "caja fuerte" donde guardamos las llaves y datos sensibles del sistema (como contraseñas o puertos de red). De esta forma, el código público no expone información privada.
+- **¿Qué es HTTPS?**
+  Es el candado de seguridad que ves en el navegador. En lugar de enviar la información en texto plano (como en HTTP), HTTPS la viaja encriptada para que nadie pueda interceptarla en el camino.
+- **¿Qué es Redis y el Bloqueo Distribuido (Distributed Lock)?**
+  Imagínate una ventanilla de atención con un cartel que dice **"Ocupado"**. Si dos personas intentan atenderse exacto al mismo segundo, el sistema le entrega la atención a la primera y le muestra un cartel de "Ocupado, intente en unos segundos" a la segunda. Esto evita que dos usuarios cambien o borren el mismo turno al mismo tiempo.
 
 ---
 
 ## 🛠️ Guía Paso a Paso para Ejecutar el Proyecto
 
-Si es la primera vez que ejecutas este proyecto en tu computadora y no tienes nada configurado, sigue estos simples pasos:
-
 ### 1. Requisitos Previos (Instalación por única vez)
 
-Asegúrate de tener instalados en tu equipo:
-
-- **Node.js (versión LTS):** Descárgalo e instálalo desde [nodejs.org](https://nodejs.org/).
-- **Git:** Descárgalo e instálalo desde [git-scm.com](https://git-scm.com/).
+- **Node.js (versión LTS):** Descárgalo e instálalo desde nodejs.org.
+- **Git:** Descárgalo e instálalo desde git-scm.com.
+- **Redis Server (Puerto 6379):** Debe estar instalado o ejecutándose en tu equipo (por ejemplo, mediante Memurai o WSL en Windows) para permitir el control de concurrencia.
 
 ---
 
-### 2. Pasos para Clonar y Ejecutar la Aplicación
+### 2. Pasos para Clonar y Configurar
 
-1. **Abrir la Terminal o Consola de Comandos:**
-   Abre **CMD**, **PowerShell** o la terminal integrada de **Visual Studio Code**.
+1. **Clonar el Repositorio:**
+   git clone https://github.com/Bre1ker1/Api_Rest.git
+   cd Api_Rest
 
-2. **Clonar el Repositorio de GitHub:**
-   Ejecuta el siguiente comando para descargar el código en tu computadora:
-   ```bash
-   git clone [https://github.com/Bre1ker1/Api_Rest.git](https://github.com/Bre1ker1/Api_Rest.git)
-   ```
+2. **Instalar Dependencias:**
+   npm install
 
-### 3. Ingresar a la Carpeta del Proyecto:
+3. **Configurar el archivo `.env`:**
+   Crea un archivo llamado `.env` en la raíz del proyecto (puedes copiar el contenido de `.env.example`):
+   PORT=3000
+   HTTPS_PORT=3443
+   SSL_KEY_PATH=./certs/server.key
+   SSL_CERT_PATH=./certs/server.cert
+   REDIS_URL=redis://localhost:6379
 
-cd_Api_Rest
+---
 
-### 4. Instalar Dependencias:
+### 3. Iniciar el Servidor
 
-Ejecuta el siguiente comando para descargar las librerias necesarias
-
-npm install
-
-### 5. Iniciar el Servidor:
+Ejecuta el siguiente comando para generar automáticamente los certificados de seguridad e iniciar los servidores HTTP, HTTPS y Redis:
 
 npm start
 
-### 6. Acceder a la Aplicacion:
+Verás una confirmación en consola indicando:
 
-Una vez que aparezca el mensaje: Servidor escuchando en http://localhost:3000, abre tu navegador e ingresa a : http://localhost:3000
+- `Servidor HTTP en http://localhost:3000`
+- `Servidor HTTPS seguro en https://localhost:3443`
+- `Conectado a Redis exitosamente.`
 
-## Estructura del Proyecto
+---
 
-API_REST/
-├── public/
+## 📁 Estructura del Proyecto
+
+Api_Rest/
+├── certs/ # Certificados SSL/TLS generados automáticamente (.key, .cert)
+├── public/ # Interfaz Web (Frontend)
 │ ├── index.html
 │ ├── script.js
 │ └── styles.css
 ├── src/
 │ ├── data/
-│ │ └── turnosMock.js
+│ │ └── turnosMock.js # Datos en memoria
 │ ├── routes/
-│ │ └── turnosRoutes.js
-│ └── app.js
+│ │ └── turnosRoutes.js# Rutas CRUD y lógica de bloqueo concurrente
+│ ├── utils/
+│ │ └── lock.js # Lógica del Distributed Lock con Redis
+│ └── app.js # Punto de entrada (servidores HTTP y HTTPS)
+├── .env # Variables de entorno (Ignorado en Git)
+├── .env.example # Plantilla de variables de entorno
 ├── .gitignore
-├── package-lock.json
+├── generarCert.js # Script automatizado de certificados de 2048 bits
 ├── package.json
 └── README.md
 
-## 📡 Lógica CRUD y Endpoints REST
+---
 
-Se implementaron las operaciones fundamentales utilizando `express.Router()` y respuestas en formato JSON:
+## 📡 Endpoints REST y Códigos de Respuesta
 
-- **GET `/api/turnos`**
-  - **Descripción:** Retorna el listado completo de turnos (permite filtro por query params).
-  - **Respuesta exitosa:** `200 OK`
-  - **Respuesta error:** `500 Internal Server Error`
+| Método | Endpoint        | Descripción                                       | Respuesta Exitosa       | Respuesta Error                                |
+| :----- | :-------------- | :------------------------------------------------ | :---------------------- | :--------------------------------------------- |
+| GET    | /api/turnos     | Retorna el listado completo de turnos.            | 200 OK                  | 500 Internal Server Error                      |
+| GET    | /api/turnos/:id | Busca un turno específico por su ID.              | 200 OK                  | 404 Not Found                                  |
+| POST   | /api/turnos     | Agenda un nuevo turno médica previa validación.   | 201 Created             | 400 Bad Request                                |
+| PUT    | /api/turnos/:id | Actualiza un turno existente (Con Bloqueo Redis). | 200 OK                  | 400 Bad Request / 404 Not Found / 409 Conflict |
+| DELETE | /api/turnos/:id | Cancela un turno por su ID (Con Bloqueo Redis).   | 200 OK / 204 No Content | 404 Not Found / 409 Conflict                   |
 
-- **GET `/api/turnos/:id`**
-  - **Descripción:** Busca un turno específico por su ID.
-  - **Respuesta exitosa:** `200 OK`
-  - **Respuesta error:** `404 Not Found`
+> Nota sobre el Error HTTP 409 Conflict: Ocurre cuando dos solicitudes compiten al mismo tiempo por el mismo turno. La segunda solicitud es rebotada de forma segura mediante el Bloqueo Distribuido de Redis.
 
-- **POST `/api/turnos`**
-  - **Descripción:** Agenda un nuevo turno previa validación.
-  - **Respuesta exitosa:** `201 Created`
-  - **Respuesta error:** `400 Bad Request`
+---
 
-- **PUT `/api/turnos/:id`**
-  - **Descripción:** Actualiza o confirma un turno existente.
-  - **Respuesta exitosa:** `200 OK`
-  - **Respuesta error:** `400 Bad Request` / `404 Not Found`
+## 🔄 Pasos para Subir Cambios a GitHub
 
-- **DELETE `/api/turnos/:id`**
-  - **Descripción:** Cancela/elimina un turno por su ID.
-  - **Respuesta exitosa:** `204 No Content`
-  - **Respuesta error:** `404 Not Found`
+Si realizas modificaciones en el código, sube los cambios a tu repositorio con los siguientes comandos:
 
-## Reglas de Validación Implementadas:
-
-Campos obligatorios: Valida que la solicitud incluya paciente, medico, fecha y hora.
-
-Incompatibilidad de horarios: Impide registrar dos turnos para el mismo médico en la misma fecha y hora.
-
-Fechas pasadas: Bloquea la creación de citas en fechas anteriores al día actual.
-
-Manejo de errores: Devuelve un código 404 Not Found si el ID consultado, modificado o eliminado no existe.
-
-## Concepto REST: Idempotencia
-
-En la API desarrollada, los métodos GET, PUT y DELETE son idempotentes, ya que realizar la misma solicitud múltiples veces consecutivas produce el mismo efecto final en el estado del servidor. Por ejemplo, ejecutar DELETE /api/turnos/123 eliminará el turno la primera vez y las peticiones subsecuentes mantendrán el recurso como inexistente sin alterar otros registros. En cambio, el método POST no es idempotente, debido a que cada ejecución repetida genera un nuevo registro con un ID único en el arreglo en memoria.
-
-## Persistencia de Datos
-
-Los turnos se almacenan temporalmente en la memoria RAM a través de un arreglo JavaScript. Al ser memoria volátil, los datos modificados se restablecen a su estado inicial si el servidor de Node.js se detiene o reinicia.
-
-### Pasos para subir la actualización a GitHub:
-
-En la terminal de VS Code ejecuta:
-
-1. `git add .`
-2. `git commit -m "Mejora las instrucciones de instalacion y ejecucion en el README"`
-3. `git push origin main` _(o `git push origin master`)_
+git add .
+git commit -m "Actualizacion del README con documentacion del TP2"
+git push origin main
