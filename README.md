@@ -10,7 +10,7 @@
 
 ---
 
-## 📋 Descripción
+##  Descripción
 
 Proyecto de API RESTful desarrollado con **Node.js**, **Express** y **Redis**. Evolución del TP N° 1 que incorpora:
 
@@ -20,7 +20,7 @@ Proyecto de API RESTful desarrollado con **Node.js**, **Express** y **Redis**. E
 
 ---
 
-## 🧠 Explicación Sencilla de las Nuevas Funcionalidades
+##  Explicación Sencilla de las Nuevas Funcionalidades
 
 Si no tienes experiencia previa en sistemas, aquí te explicamos qué hacen los nuevos componentes:
 
@@ -33,7 +33,7 @@ Si no tienes experiencia previa en sistemas, aquí te explicamos qué hacen los 
 
 ---
 
-## 🛠️ Guía Paso a Paso para Ejecutar el Proyecto
+##  Guía Paso a Paso para Ejecutar el Proyecto
 
 ### 1. Requisitos Previos (Instalación por única vez)
 
@@ -76,7 +76,7 @@ Verás una confirmación en consola indicando:
 
 ---
 
-## 📁 Estructura del Proyecto
+##  Estructura del Proyecto
 
 Api_Rest/
 ├── certs/ # Certificados SSL/TLS generados automáticamente (.key, .cert)
@@ -101,7 +101,7 @@ Api_Rest/
 
 ---
 
-## 📡 Endpoints REST y Códigos de Respuesta
+##  Endpoints REST y Códigos de Respuesta
 
 | Método | Endpoint        | Descripción                                       | Respuesta Exitosa       | Respuesta Error                                |
 | :----- | :-------------- | :------------------------------------------------ | :---------------------- | :--------------------------------------------- |
@@ -115,7 +115,7 @@ Api_Rest/
 
 ---
 
-## 🔄 Pasos para Subir Cambios a GitHub
+##  Pasos para Subir Cambios a GitHub
 
 Si realizas modificaciones en el código, sube los cambios a tu repositorio con los siguientes comandos:
 
