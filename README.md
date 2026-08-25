@@ -127,6 +127,6 @@ Los turnos se almacenan temporalmente en la memoria RAM a través de un arreglo 
 
 En la terminal de VS Code ejecuta:
 
-1. `git add README.md`
+1. `git add .`
 2. `git commit -m "Mejora las instrucciones de instalacion y ejecucion en el README"`
 3. `git push origin main` _(o `git push origin master`)_
