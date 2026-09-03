@@ -1,0 +1,1 @@
+{"level":"error","message":"Error de conexión a MongoDB: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017","timestamp":"2026-09-01 20:39:45"}

@@ -1,0 +1,11 @@
+{"level":"info","message":"Servidor HTTP activo en puerto http://localhost:3000","timestamp":"2026-09-03 18:03:25"}
+{"level":"info","message":"Documentación Swagger disponible en http://localhost:3000/api-docs","timestamp":"2026-09-03 18:03:25"}
+{"level":"info","message":"Servidor HTTPS seguro activo en https://localhost:3443","timestamp":"2026-09-03 18:03:25"}
+{"level":"info","message":"MongoDB conectado: localhost","timestamp":"2026-09-03 18:03:25"}
+{"level":"info","message":"GET /api/turnos - Se consultaron 0 turnos","timestamp":"2026-09-03 18:04:32"}
+{"level":"info","message":"GET /api/turnos - Se consultaron 0 turnos","timestamp":"2026-09-03 18:12:05"}
+{"level":"info","message":"Servidor HTTP activo en puerto http://localhost:3000","timestamp":"2026-09-03 18:13:18"}
+{"level":"info","message":"Documentación Swagger disponible en http://localhost:3000/api-docs","timestamp":"2026-09-03 18:13:18"}
+{"level":"info","message":"Servidor HTTPS seguro activo en https://localhost:3443","timestamp":"2026-09-03 18:13:18"}
+{"level":"info","message":"MongoDB conectado: localhost","timestamp":"2026-09-03 18:13:18"}
+{"level":"info","message":"POST /api/turnos - Creado turno ID: 6a99e2fc67ef08665151cd97","timestamp":"2026-09-03 18:13:32"}

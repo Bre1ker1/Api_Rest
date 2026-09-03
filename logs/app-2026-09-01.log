@@ -1,0 +1,4 @@
+{"level":"info","message":"Servidor HTTP activo en puerto http://localhost:3000","timestamp":"2026-09-01 20:39:15"}
+{"level":"info","message":"Documentación Swagger disponible en http://localhost:3000/api-docs","timestamp":"2026-09-01 20:39:15"}
+{"level":"info","message":"Servidor HTTPS seguro activo en https://localhost:3443","timestamp":"2026-09-01 20:39:15"}
+{"level":"error","message":"Error de conexión a MongoDB: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017","timestamp":"2026-09-01 20:39:45"}

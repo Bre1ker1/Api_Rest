@@ -1,122 +1,198 @@
-// src/routes/turnosRoutes.js
 const express = require('express');
 const router = express.Router();
-let turnos = require('../data/turnosMock');
-const { adquirirLock, liberarLock } = require('../utils/lock');
+const mongoose = require('mongoose');
+const Turno = require('../models/Turno');
+const logger = require('../utils/logger');
+const { acquireLock, releaseLock } = require('../utils/lock');
 
-// GET /api/turnos - Obtener todos los turnos (con o sin filtros)
-router.get('/', (req, res) => {
-  const { medico, fecha } = req.query;
-  let resultado = turnos;
-
-  if (medico) {
-    resultado = resultado.filter(t => t.medico.toLowerCase() === medico.toLowerCase());
+/**
+ * @openapi
+ * /api/turnos:
+ *   get:
+ *     summary: Obtener todos los turnos
+ *     responses:
+ *       200:
+ *         description: Lista de turnos obtenida exitosamente
+ */
+router.get('/', async (req, res) => {
+  try {
+    const turnos = await Turno.find();
+    logger.info(`GET /api/turnos - Se consultaron ${turnos.length} turnos`);
+    res.json(turnos);
+  } catch (error) {
+    logger.error(`Error en GET /api/turnos: ${error.message}`);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
-
-  if (fecha) {
-    resultado = resultado.filter(t => t.fecha === fecha);
-  }
-
-  res.status(200).json(resultado);
 });
 
-// GET /api/turnos/:id - Obtener turno por ID
-router.get('/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  const turno = turnos.find(t => t.id === id);
-
-  if (!turno) {
-    return res.status(404).json({ error: 'Turno no encontrado' });
+/**
+ * @openapi
+ * /api/turnos/{id}:
+ *   get:
+ *     summary: Obtener turno por ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Turno encontrado
+ *       400:
+ *         description: ID con formato inválido
+ *       404:
+ *         description: Turno no encontrado
+ */
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    logger.warn(`GET /api/turnos/${id} - Formato de ID inválido`);
+    return res.status(400).json({ error: 'El ID provisto no tiene un formato válido' });
   }
 
-  res.status(200).json(turno);
+  try {
+    const turno = await Turno.findById(id);
+    if (!turno) {
+      logger.warn(`GET /api/turnos/${id} - Turno no encontrado`);
+      return res.status(404).json({ error: 'Turno no encontrado' });
+    }
+    logger.info(`GET /api/turnos/${id} - Turno obtenido correctamente`);
+    res.json(turno);
+  } catch (error) {
+    logger.error(`Error en GET /api/turnos/${id}: ${error.message}`);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
-// POST /api/turnos - Crear un nuevo turno
-router.post('/', (req, res) => {
-  if (!req.body || Object.keys(req.body).length === 0) {
-    return res.status(400).json({ error: 'El cuerpo de la solicitud está vacío' });
+/**
+ * @openapi
+ * /api/turnos:
+ *   post:
+ *     summary: Crear un nuevo turno
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Turno'
+ *     responses:
+ *       201:
+ *         description: Turno creado exitosamente
+ *       400:
+ *         description: Error de validación de datos
+ */
+router.post('/', async (req, res) => {
+  try {
+    const nuevoTurno = new Turno(req.body);
+    const turnoGuardado = await nuevoTurno.save();
+    logger.info(`POST /api/turnos - Creado turno ID: ${turnoGuardado._id}`);
+    res.status(201).json(turnoGuardado);
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      logger.warn(`POST /api/turnos - Error de validación: ${error.message}`);
+      return res.status(400).json({ error: error.message });
+    }
+    logger.error(`Error en POST /api/turnos: ${error.message}`);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
-
-  const { paciente, medico, fecha, hora } = req.body;
-
-  if (!paciente || !medico || !fecha || !hora) {
-    return res.status(400).json({ error: 'Los campos paciente, medico, fecha y hora son obligatorios' });
-  }
-
-  const nuevoId = turnos.length > 0 ? Math.max(...turnos.map(t => t.id)) + 1 : 1;
-  const nuevoTurno = { id: nuevoId, paciente, medico, fecha, hora };
-
-  turnos.push(nuevoTurno);
-  res.status(201).json(nuevoTurno);
 });
 
-// PUT /api/turnos/:id - Actualizar un turno existente con Lock Concurrente
+/**
+ * @openapi
+ * /api/turnos/{id}:
+ *   put:
+ *     summary: Actualizar un turno (Protegido con Redis Lock)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Turno actualizado
+ *       409:
+ *         description: Conflicto de concurrencia
+ */
 router.put('/:id', async (req, res) => {
-  const id = parseInt(req.params.id);
-  const index = turnos.findIndex(t => t.id === id);
-
-  if (index === -1) {
-    return res.status(404).json({ error: 'Turno no encontrado' });
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: 'ID inválido' });
   }
 
-  if (!req.body || Object.keys(req.body).length === 0) {
-    return res.status(400).json({ error: 'El cuerpo de la solicitud está vacío' });
-  }
+  const lockKey = `lock:turno:${id}`;
+  const lockAcquired = await acquireLock(lockKey, 5000);
 
-  const { paciente, medico, fecha, hora } = req.body;
-
-  if (!paciente || !medico || !fecha || !hora) {
-    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
-  }
-
-  // --- LÓGICA DE DISTRIBUTED LOCK ---
-  const tokenPropietario = `token_${Date.now()}_${Math.random()}`;
-  const lockAdquirido = await adquirirLock(id, tokenPropietario, 5);
-
-  if (!lockAdquirido) {
-    return res.status(409).json({
-      error: 'Recurso bloqueado',
-      mensaje: 'Otro usuario está modificando este turno. Intenta nuevamente en unos segundos.'
-    });
+  if (!lockAcquired) {
+    logger.warn(`PUT /api/turnos/${id} - Bloqueado por concurrencia (Redis Lock)`);
+    return res.status(409).json({ error: 'El recurso está siendo modificado por otra solicitud. Reintente.' });
   }
 
   try {
-    // Simulación de delay de procesamiento (3 segundos)
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    turnos[index] = { id, paciente, medico, fecha, hora };
-    res.status(200).json(turnos[index]);
+    const turnoActualizado = await Turno.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+    if (!turnoActualizado) {
+      logger.warn(`PUT /api/turnos/${id} - Turno no encontrado`);
+      return res.status(404).json({ error: 'Turno no encontrado' });
+    }
+    logger.info(`PUT /api/turnos/${id} - Turno actualizado correctamente`);
+    res.json(turnoActualizado);
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      logger.warn(`PUT /api/turnos/${id} - Error de validación: ${error.message}`);
+      return res.status(400).json({ error: error.message });
+    }
+    logger.error(`Error en PUT /api/turnos/${id}: ${error.message}`);
+    res.status(500).json({ error: 'Error interno del servidor' });
   } finally {
-    await liberarLock(id, tokenPropietario);
+    await releaseLock(lockKey);
   }
 });
 
-// DELETE /api/turnos/:id - Eliminar un turno con Lock Concurrente
+/**
+ * @openapi
+ * /api/turnos/{id}:
+ *   delete:
+ *     summary: Eliminar un turno (Protegido con Redis Lock)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Turno eliminado
+ *       409:
+ *         description: Conflicto de concurrencia
+ */
 router.delete('/:id', async (req, res) => {
-  const id = parseInt(req.params.id);
-  const index = turnos.findIndex(t => t.id === id);
-
-  if (index === -1) {
-    return res.status(404).json({ error: 'Turno no encontrado' });
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: 'ID inválido' });
   }
 
-  // --- LÓGICA DE DISTRIBUTED LOCK ---
-  const tokenPropietario = `token_${Date.now()}_${Math.random()}`;
-  const lockAdquirido = await adquirirLock(id, tokenPropietario, 5);
+  const lockKey = `lock:turno:${id}`;
+  const lockAcquired = await acquireLock(lockKey, 5000);
 
-  if (!lockAdquirido) {
-    return res.status(409).json({
-      error: 'Recurso bloqueado',
-      mensaje: 'Otro usuario está procesando este turno. Intenta nuevamente.'
-    });
+  if (!lockAcquired) {
+    logger.warn(`DELETE /api/turnos/${id} - Bloqueado por concurrencia (Redis Lock)`);
+    return res.status(409).json({ error: 'El recurso está siendo modificado por otra solicitud.' });
   }
 
   try {
-    turnos.splice(index, 1);
-    res.status(204).send();
+    const turnoEliminado = await Turno.findByIdAndDelete(id);
+    if (!turnoEliminado) {
+      logger.warn(`DELETE /api/turnos/${id} - Turno no encontrado`);
+      return res.status(404).json({ error: 'Turno no encontrado' });
+    }
+    logger.info(`DELETE /api/turnos/${id} - Turno eliminado exitosamente`);
+    res.json({ mensaje: 'Turno eliminado correctamente', id });
+  } catch (error) {
+    logger.error(`Error en DELETE /api/turnos/${id}: ${error.message}`);
+    res.status(500).json({ error: 'Error interno del servidor' });
   } finally {
-    await liberarLock(id, tokenPropietario);
+    await releaseLock(lockKey);
   }
 });
 
