@@ -1,41 +1,44 @@
 const mongoose = require('mongoose');
 
-const raftSchema = new mongoose.Schema({
-  _id: { type: String, default: 'raft_state' },
+const raftStateSchema = new mongoose.Schema({
+  nodeId: { type: String, required: true, unique: true },
   currentTerm: { type: Number, default: 0 },
   votedFor: { type: String, default: null },
   log: { type: Array, default: [] }
-}, { timestamps: true });
+});
 
-const RaftModel = mongoose.model('RaftState', raftSchema);
+const RaftState = mongoose.models.RaftState || mongoose.model('RaftState', raftStateSchema);
 
 class RaftPersistence {
-  static async cargarEstado() {
-    try {
-      let doc = await RaftModel.findById('raft_state');
-      if (!doc) {
-        doc = await RaftModel.create({ _id: 'raft_state', currentTerm: 0, votedFor: null, log: [] });
-      }
-      return { currentTerm: doc.currentTerm, votedFor: doc.votedFor, log: doc.log };
-    } catch (err) {
-      console.error('[RaftPersistence] Error al cargar estado:', err.message);
-      return { currentTerm: 0, votedFor: null, log: [] };
-    }
+  constructor(nodeId) {
+    this.nodeId = nodeId;
   }
 
-  static async guardarEstado(raftNode) {
+  async loadState() {
     try {
-      await RaftModel.findByIdAndUpdate(
-        'raft_state',
-        {
-          currentTerm: raftNode.currentTerm,
-          votedFor: raftNode.votedFor,
-          log: raftNode.log
-        },
-        { upsert: true, returnDocument: 'after' }
+      const doc = await RaftState.findOne({ nodeId: this.nodeId });
+      if (doc) {
+        return {
+          currentTerm: doc.currentTerm,
+          votedFor: doc.votedFor,
+          log: doc.log
+        };
+      }
+    } catch (err) {
+      console.error(`[Persistencia ${this.nodeId}] Error al cargar estado:`, err.message);
+    }
+    return null;
+  }
+
+  async saveState({ currentTerm, votedFor, log }) {
+    try {
+      await RaftState.findOneAndUpdate(
+        { nodeId: this.nodeId },
+        { currentTerm, votedFor, log },
+        { upsert: true, new: true }
       );
     } catch (err) {
-      console.error('[RaftPersistence] Error al guardar estado:', err.message);
+      console.error(`[Persistencia ${this.nodeId}] Error al guardar estado:`, err.message);
     }
   }
 }

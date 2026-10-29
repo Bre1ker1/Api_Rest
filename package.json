@@ -1,28 +1,20 @@
 {
   "name": "api_rest",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "description": "API REST Distribuida - TP4 Raft y Redis Lock",
+  "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "node1": "cross-env NODE_ID=node1 PORT=3001 RAFT_PORT=4001 MONGO_URI=mongodb://localhost:27017/db_node1 node src/app.js",
+    "node2": "cross-env NODE_ID=node2 PORT=3002 RAFT_PORT=4002 MONGO_URI=mongodb://localhost:27017/db_node2 node src/app.js",
+    "node3": "cross-env NODE_ID=node3 PORT=3003 RAFT_PORT=4003 MONGO_URI=mongodb://localhost:27017/db_node3 node src/app.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Bre1ker1/Api_Rest.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/Bre1ker1/Api_Rest/issues"
-  },
-  "homepage": "https://github.com/Bre1ker1/Api_Rest#readme",
   "dependencies": {
-    "express": "^5.2.1"
+    "axios": "^1.6.0",
+    "cross-env": "^7.0.3",
+    "express": "^4.18.2",
+    "mongoose": "^8.0.0",
+    "redis": "^4.6.10",
+    "uuid": "^9.0.1"
   }
 }
