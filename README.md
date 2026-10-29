@@ -114,7 +114,4 @@ Api_Rest/
 │   └── app.js             # Punto de entrada Express y endpoints RPC Raft
 ├── package.json           # Scripts de arranque de nodos y dependencias
 └── README.md
-📤 Actualizar en GitHub
-Para subir la documentación finalizada a tu repositorio, ejecuta en la terminal:
 
-DOS
